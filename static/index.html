@@ -75,7 +75,7 @@ function animate() {
   // Determine target values
   const targetSpeed = thinking ? thinkingSpeed : normalSpeed;
   const targetAmplitude = thinking ? thinkingAmplitude : normalAmplitude;
-  const lerpFactor = 0.003;
+  const lerpFactor = 0.001;
   currentSpeed = lerp(currentSpeed, targetSpeed, lerpFactor);
   currentAmplitude = lerp(currentAmplitude, targetAmplitude, lerpFactor);
 
@@ -174,10 +174,9 @@ function playClickSound() {
   }
 }
 
-
 input.addEventListener('keydown', async (e) => {
   if (e.key === 'Enter') {
-    e.preventDefault(); // prevent form submission or newline
+    e.preventDefault();
     const text = input.value.trim();
     if (!text || thinking) return;
 
@@ -193,17 +192,45 @@ input.addEventListener('keydown', async (e) => {
       const data = await res.json();
       console.log('Response:', data.response);
 
-      const audio = new Audio(`http://localhost:8000${data.audio_url}`);
+      const audioUrl = `http://localhost:8000${data.audio_url}`;
+      const audio = new Audio(audioUrl);
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      const source = audioContext.createMediaElementSource(audio);
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
       audio.play();
+
+      function updateAmplitudeFromAudio() {
+        if (!audio.paused && !audio.ended) {
+          analyser.getByteFrequencyData(dataArray);
+          const avg = dataArray.reduce((sum, val) => sum + val, 0) / dataArray.length;
+          const normalized = avg / 256;
+          sphere.material.uniforms.uAmplitude.value = lerp(
+            sphere.material.uniforms.uAmplitude.value,
+            0.02 + normalized * 0.2,
+            0.2
+          );
+          requestAnimationFrame(updateAmplitudeFromAudio);
+        } else {
+          sphere.material.uniforms.uAmplitude.value = normalAmplitude;
+        }
+      }
+
+      updateAmplitudeFromAudio();
+
     } catch (e) {
       console.error('Error:', e);
     } finally {
-      thinking = false;
       input.value = '';
+      thinking = false;
     }
   }
 });
-
 </script>
 </body>
 </html>
