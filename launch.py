@@ -13,7 +13,7 @@ HTML_PATH = "index.html"  # adjust if your file is elsewhere
 def start_server():
     print("[*] Starting FastAPI server with uvicorn...")
     return subprocess.Popen(
-        ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", str(SERVER_PORT), "--reload"],
+        ["./venv/python.exe", "server.py"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )

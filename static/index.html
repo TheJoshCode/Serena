@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Interactive Malleable Bubble Sphere</title>
+  <title>Serena</title>
   <style>
     body { margin:0; overflow:hidden; display:flex; justify-content:center; align-items:center; height:100vh; background:#fff; }
     #container {
@@ -56,7 +56,34 @@ let thinking = false;
 const normalSpeed = 1.2;
 const normalAmplitude = 0.02;
 const thinkingSpeed = 6.0;
-const thinkingAmplitude = 0.06;
+const thinkingAmplitude = 0.1;
+
+let currentSpeed = normalSpeed;
+let currentAmplitude = normalAmplitude;
+
+function lerp(start, end, t) {
+  return start + (end - start) * t;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  sphere.material.uniforms.uTime.value = t;
+  sphere.material.uniforms.uPointer.value.copy(pointer);
+
+  // Determine target values
+  const targetSpeed = thinking ? thinkingSpeed : normalSpeed;
+  const targetAmplitude = thinking ? thinkingAmplitude : normalAmplitude;
+  const lerpFactor = 0.003;
+  currentSpeed = lerp(currentSpeed, targetSpeed, lerpFactor);
+  currentAmplitude = lerp(currentAmplitude, targetAmplitude, lerpFactor);
+
+  sphere.material.uniforms.uSpeed.value = currentSpeed;
+  sphere.material.uniforms.uAmplitude.value = currentAmplitude;
+
+  renderer.render(scene, camera);
+}
 
 init();
 animate();
@@ -123,24 +150,6 @@ function init() {
 
   sphere = new THREE.Mesh(geometry, material);
   scene.add(sphere);
-}
-
-function animate(){
-  requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
-
-  sphere.material.uniforms.uTime.value = t;
-  sphere.material.uniforms.uPointer.value.copy(pointer);
-
-  if (thinking) {
-    sphere.material.uniforms.uSpeed.value = thinkingSpeed;
-    sphere.material.uniforms.uAmplitude.value = thinkingAmplitude;
-  } else {
-    sphere.material.uniforms.uSpeed.value = normalSpeed;
-    sphere.material.uniforms.uAmplitude.value = normalAmplitude;
-  }
-
-  renderer.render(scene, camera);
 }
 
 function playClickSound() {
